@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ROADSTART BARBERY</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+            background-image: url('fondo.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .content {
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            color: white;
+        }
+    .container { max-width: 900px; margin: auto; }
+
+    h1 {
+      text-align: center;
+      color: red;
+      margin-bottom: 20px;
+      font-size: 36px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      animation: pulse 2s infinite;
+    }
+
+    .scissors {
+      font-size: 36px;
+      transform: rotate(-20deg);
+      animation: spin 2s linear infinite;
+    }
+
+    .scissors.right {
+      transform: rotate(20deg);
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      25% { transform: rotate(20deg); }
+      50% { transform: rotate(0deg); }
+      75% { transform: rotate(-20deg); }
+      100% { transform: rotate(0deg); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { color: red; transform: scale(1); }
+      50% { color: #ff3333; transform: scale(1.05); }
+    }
+
+    .tabs {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .tab-button {
+      background-color: blue;
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      margin: 0 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .tab-button.active { background-color: red; }
+    .tab-content {
+      display: none;
+      padding: 20px;
+      border: 2px solid blue;
+      border-radius: 10px;
+      background-color: rgba(0, 0, 0, 0.7);
+    }
+    .tab-content.active { display: block; }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+      color: blue;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid blue;
+      border-radius: 5px;
+      font-size: 1em;
+    }
+    button {
+      background-color: red;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    h2 { color: red; }
+    .cliente-item {
+      background: #1a1a1a;
+      margin: 10px 0;
+      padding: 10px;
+      border-left: 5px solid blue;
+      color: #ffffff;
+    }
+    .acciones { margin-top: 10px; }
+    .acciones button {
+      width: auto;
+      margin-right: 10px;
+      padding: 8px 12px;
+      border-radius: 5px;
+      font-weight: bold;
+      font-size: 16px;
+      border: none;
+    }
+    .acciones button.check { background-color: #00ff00; color: black; }
+    .acciones button.cancel { background-color: #ff3333; color: white; }
+    #confirmacion {
+      display: none;
+      position: fixed;
+      top: 30%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: #00cfff;
+      border: 3px solid white;
+      padding: 40px;
+      font-size: 24px;
+      text-align: center;
+      color: white;
+      z-index: 1000;
+      border-radius: 10px;
+      box-shadow: 0 0 20px white;
+    }
+    option { color: black; }
+    #ganancia {
+      background-color: #1a1a1a;
+      margin-top: 20px;
+      padding: 15px;
+      border-left: 5px solid green;
+      font-size: 20px;
+      color: #ffffff;
+    }
+    .error-message {
+      color: #ff3333;
+      font-size: 0.8em;
+      margin-top: 2px;
+    }
+    /* Nuevos estilos para la sección de Mis Turnos */
+    #resultadosTurnos {
+      color: white;
+    }
+    .turno-cliente {
+      background: #1a1a1a;
+      margin: 10px 0;
+      padding: 15px;
+      border-left: 5px solid #4CAF50;
+      border-radius: 5px;
+    }
+    .turno-cliente h3 {
+      color: #4CAF50;
+      margin-top: 0;
+    }
+    .turno-cliente button {
+      background-color: #f44336;
+      margin-top: 10px;
+    }
+    .turno-cliente button:hover {
+      background-color: #d32f2f;
+    }
+    #buscarTurno {
+      background-color: rgba(0, 0, 0, 0.7);
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+    #buscarTurno input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid blue;
+      border-radius: 5px;
+    }
+    #buscarTurno button {
+      width: 100%;
+    }
+    .nombre-exacto {
+      font-size: 0.8em;
+      color: #aaa;
+      margin-top: -5px;
+      margin-bottom: 10px;
+    }
+    .no-horarios {
+      color: #ff3333;
+      font-weight: bold;
+      margin-top: 5px;
+    }
+    .success-message {
+      color: #00ff00;
+      font-size: 0.9em;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+
+<div class="container">
+  <h1>
+    <span class="scissors">✂️</span>
+    ROADSTART BARBERY
+    <span class="scissors right">✂️</span>
+  </h1>
+
+  <div class="tabs">
+    <button class="tab-button active" onclick="mostrarTab('clientes', this)">Clientes</button>
+    <button class="tab-button" onclick="mostrarTab('empleados', this)">Empleados</button>
+    <button class="tab-button" onclick="mostrarTab('misturnos', this)">Mis Turnos</button>
+  </div>
+
+  <!-- CLIENTES -->
+  <div class="tab-content active" id="tab-clientes">
+    <h2>Reservar Turno</h2>
+    <form id="formClientes">
+      <label>Nombre del cliente:</label>
+      <input type="text" id="nombreCliente" required />
+      <div id="nombreError" class="error-message"></div>
+
+      <label>Seleccionar Barbero:</label>
+      <select id="barbero" onchange="actualizarDias(); actualizarTipoCorte();" required>
+        <option value="">--Seleccionar--</option>
+        <option value="Rodrigo">Rodrigo</option>
+        <option value="Mariano">Mariano</option>
+        <option value="Konstantin">Konstantin</option>
+        <option value="Genaro">Genaro</option>
+      </select>
+      <div id="barberoError" class="error-message"></div>
+
+      <label>Tipo de corte:</label>
+      <select id="tipoCorte" required>
+        <option value="">--Seleccionar barbero primero--</option>
+      </select>
+      <div id="tipoCorteError" class="error-message"></div>
+
+      <label>Día:</label>
+      <select id="dia" onchange="actualizarHorarios();" required>
+        <option value="">--Seleccionar barbero primero--</option>
+      </select>
+      <div id="diaError" class="error-message"></div>
+
+      <label>Horario:</label>
+      <select id="horario" required>
+        <option value="">--Seleccionar día primero--</option>
+      </select>
+      <div id="horarioError" class="error-message"></div>
+      <div id="horarioInfo" class="no-horarios"></div>
+
+      <label>Método de pago:</label>
+      <select id="pago" required>
+        <option value="">--Seleccionar--</option>
+        <option value="Efectivo">Efectivo</option>
+        <option value="Transferencia">Transferencia</option>
+      </select>
+      <div id="pagoError" class="error-message"></div>
+
+      <button type="submit">Confirmar Turno</button>
+    </form>
+  </div>
+
+  <!-- EMPLEADOS -->
+  <div class="tab-content" id="tab-empleados">
+    <h2>Acceso Empleados</h2>
+    <input type="text" id="nombreEmpleado" placeholder="Nombre del barbero" />
+    <input type="password" id="claveEmpleado" placeholder="Contraseña" />
+    <select id="diaGanancia">
+      <option value="">Seleccionar día</option>
+      <option value="lunes">Lunes</option>
+      <option value="martes">Martes</option>
+      <option value="miercoles">Miércoles</option>
+      <option value="jueves">Jueves</option>
+      <option value="viernes">Viernes</option>
+      <option value="sabado">Sábado</option>
+    </select>
+    <button id="btnIngresar" onclick="verTurnosEmpleado()">Ingresar</button>
+    <div id="resultadosEmpleado" style="margin-top:20px; color: white;"></div>
+    <div id="ganancia"></div>
+  </div>
+
+  <!-- MIS TURNOS -->
+  <div class="tab-content" id="tab-misturnos">
+    <h2>Mis Turnos</h2>
+    <div id="buscarTurno">
+      <label>Ingrese su nombre exacto:</label>
+      <input type="text" id="nombreBusqueda" placeholder="Nombre exacto como lo registró al sacar turno">
+      <p class="nombre-exacto">Debe ingresar su nombre exactamente como lo escribió al reservar el turno.</p>
+      <button onclick="buscarMisTurnos()">Buscar Turnos</button>
+    </div>
+    <div id="resultadosTurnos" style="margin-top:20px;"></div>
+  </div>
+</div>
+
+<div id="confirmacion">✅ Turno Confirmado</div>
+
+<script>
+// Configuración de Firebase (REEMPLAZA CON TUS DATOS)
+const firebaseConfig = {
+  apiKey: "AIzaSyB4IzoPYKL3HF-R5bJufaDcrnSBV_KlF5w",
+  authDomain: "roadstartbarbery-8500a.firebaseapp.com",
+  databaseURL: "https://roadstartbarbery-8500a-default-rtdb.firebaseio.com",
+  projectId: "roadstartbarbery-8500a",
+  storageBucket: "roadstartbarbery-8500a.firebasestorage.app",
+  messagingSenderId: "1024612364543",
+  appId: "1:1024612364543:web:24dbe33151c4364cb41cca"
+};
+
+// Inicializa Firebase
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+
+// Datos de la barbería
+const horariosPorBarbero = {
+  Rodrigo: { 
+    lunes: ["12:30hs", "13:30hs", "17:00hs", "18:00hs", "18:30hs", "19:00hs", "20hs"], 
+    martes: ["12:30hs", "13:30hs", "17:00hs", "18:00hs", "18:30hs", "19:00hs", "20hs"], 
+    miercoles: ["10:30hs", "11:30hs", "12:30hs", "13:30hs", "17:00hs", "18:00hs", "19:00hs", "20:00hs", "21:00hs"], 
+    jueves: ["10:30hs", "11:30hs", "12:30hs", "13:30hs", "17:00hs", "18:00hs", "19:00hs", "20:00hs", "21:00hs"], 
+    viernes: ["10:30hs", "11:30hs", "12:30hs", "13:30hs", "16:00hs", "17:00hs", "18:00hs", "19:00hs"], 
+    sabado: ["10:30hs", "11:30hs", "12:30hs", "13:30hs", "16:00hs", "17:00hs", "18:00hs", "19:00hs"] 
+  },
+  Mariano: { 
+    lunes: ["10:30hs", "11:00hs", "11:30hs", "12:00hs", "12:30hs", "18:30hs", "19:00hs", "19:30hs", "20:00hs", "20:30hs", "21:00hs"],
+    miercoles: ["10:30hs", "11:00hs", "11:30hs", "12:00hs", "12:30hs", "18:30hs", "19:00hs", "19:30hs", "20:00hs", "20:30hs", "21:00hs"],
+    jueves: ["10:30hs", "11:00hs", "11:30hs", "12:00hs", "12:30hs", "18:30hs", "19:00hs", "19:30hs", "20:00hs", "20:30hs", "21:00hs"],
+    viernes: ["10:30hs", "11:00hs", "11:30hs", "12:00hs", "12:30hs", "18:30hs", "19:00hs", "19:30hs", "20:00hs", "20:30hs", "21:00hs"],
+    sabado: ["10:30hs", "11:00hs", "11:30hs", "12:00hs", "12:30hs", "18:30hs", "19:00hs", "19:30hs", "20:00hs", "20:30hs", "21:00hs"]
+  },
+  Konstantin: { 
+    lunes: ["15:30hs", "16:00hs", "16:30hs", "17:00hs", "17:30hs", "18:00hs", "18:30hs", "19:00hs", "19:30hs", "20:00hs", "20:30hs", "21:00hs"],
+    martes: ["15:30hs", "16:00hs", "16:30hs", "17:00hs", "17:30hs", "18:00hs", "18:30hs", "19:00hs", "19:30hs", "20:00hs", "20:30hs", "21:00hs"],
+    miercoles: ["15:30hs", "16:00hs", "16:30hs", "17:00hs", "17:30hs", "18:00hs", "18:30hs", "19:00hs", "19:30hs", "20:00hs", "20:30hs", "21:00hs"],
+    jueves: ["15:30hs", "16:00hs", "16:30hs", "17:00hs", "17:30hs", "18:00hs", "18:30hs", "19:00hs", "19:30hs", "20:00hs", "20:30hs", "21:00hs"],
+    viernes: ["15:30hs", "16:00hs", "16:30hs", "17:00hs", "17:30hs", "18:00hs", "18:30hs", "19:00hs", "19:30hs", "20:00hs", "20:30hs", "21:00hs"],
+    sabado: ["10:00hs", "10:30hs", "11:00hs", "11:30hs", "12:00hs", "12:30hs", "13:00hs", "13:30hs", "14:00hs", "14:30hs", "15:00hs", "15:30hs", "16:00hs", "16:30hs", "17:00hs", "17:30hs", "18:00hs", "18:30hs", "19:00hs", "19:30hs", "20:00hs", "20:30hs", "21:00hs"]
+  },
+  Genaro: { 
+    lunes: ["16:00hs", "16:30hs", "17:00hs", "17:30hs", "18:00hs", "18:30hs", "19:00hs"],
+    martes: ["16:00hs", "16:30hs", "17:00hs", "17:30hs", "18:00hs", "18:30hs", "19:00hs"],
+    miercoles: ["16:00hs", "16:30hs", "17:00hs", "17:30hs", "18:00hs", "18:30hs", "19:00hs"],
+    jueves: ["16:00hs", "16:30hs", "17:00hs", "17:30hs", "18:00hs", "18:30hs", "19:00hs"],
+    viernes: ["16:00hs", "16:30hs", "17:00hs", "17:30hs", "18:00hs", "18:30hs", "19:00hs"],
+    sabado: ["16:00hs", "16:30hs", "17:00hs", "17:30hs", "18:00hs", "18:30hs", "19:00hs", "19:30hs", "20:00hs", "20:30hs", "21:00hs"]
+  }
+};
+
+// Variables globales
+let clientes = [];
+let turnosReservados = {};
+
+// Cargar datos desde Firebase
+function cargarDatos() {
+  database.ref('turnos/').on('value', (snapshot) => {
+    clientes = [];
+    turnosReservados = {};
+    
+    const datos = snapshot.val();
+    if (datos) {
+      Object.keys(datos).forEach(key => {
+        const turno = datos[key];
+        turno.id = key; // Guardamos el ID de Firebase
+        clientes.push(turno);
+        
+        // Marcamos horarios como reservados
+        const claveTurno = `${turno.barbero}-${turno.diaOriginal}-${turno.horario.split(" - ")[1]}`;
+        turnosReservados[claveTurno] = true;
+      });
+    }
+  });
+}
+
+// Inicializar carga de datos
+cargarDatos();
+
+// Funciones principales (se mantienen igual hasta el formulario)
+function mostrarTab(tab, btn) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.getElementById("tab-" + tab).classList.add("active");
+  document.querySelectorAll('.tab-button').forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  
+  if (tab === 'empleados') {
+    document.getElementById('btnIngresar').disabled = false;
+  }
+}
+
+function actualizarDias() {
+  const barbero = document.getElementById("barbero").value;
+  const diaSelect = document.getElementById("dia");
+  diaSelect.innerHTML = '<option value="">--Seleccionar--</option>';
+  
+  if (!barbero) return;
+  
+  const dias = Object.keys(horariosPorBarbero[barbero]);
+  dias.forEach(dia => {
+    diaSelect.innerHTML += `<option value="${dia}">${dia.charAt(0).toUpperCase() + dia.slice(1)}</option>`;
+  });
+  
+  document.getElementById("horario").innerHTML = '<option value="">--Seleccionar día primero--</option>';
+}
+
+function actualizarHorarios() {
+  const barbero = document.getElementById("barbero").value;
+  const dia = document.getElementById("dia").value;
+  const horarioSelect = document.getElementById("horario");
+  const horarioInfo = document.getElementById("horarioInfo");
+  horarioSelect.innerHTML = '<option value="">--Seleccionar--</option>';
+  horarioInfo.textContent = '';
+  
+  if (!barbero || !dia) return;
+  
+  if (horariosPorBarbero[barbero] && horariosPorBarbero[barbero][dia]) {
+    const horariosDisponibles = horariosPorBarbero[barbero][dia].filter(h => {
+      const clave = `${barbero}-${dia}-${h}`;
+      return !turnosReservados[clave];
+    });
+    
+    if (horariosDisponibles.length === 0) {
+      horarioInfo.textContent = 'No hay horarios disponibles para este día. Por favor seleccione otro día.';
+      horarioInfo.className = 'no-horarios';
+    } else {
+      horariosDisponibles.forEach(h => {
+        horarioSelect.innerHTML += `<option value="${h}">${h}</option>`;
+      });
+    }
+  }
+}
+
+function actualizarTipoCorte() {
+  const barbero = document.getElementById("barbero").value;
+  const tipoCorte = document.getElementById("tipoCorte");
+  tipoCorte.innerHTML = '<option value="">--Seleccionar--</option>';
+  
+  if (!barbero) return;
+  
+  if (barbero === "Rodrigo") {
+    tipoCorte.innerHTML += `
+      <option value="Corte - $7000">Corte - $7000</option>
+      <option value="Corte y barba - $7500">Corte y barba - $7500</option>
+      <option value="Corte lavado + barba o perfilado - $8000">Corte lavado + barba o perfilado - $8000</option>
+    `;
+  } else if (["Mariano", "Konstantin", "Genaro"].includes(barbero)) {
+    tipoCorte.innerHTML += `
+      <option value="Corte - $6000">Corte - $6000</option>
+      <option value="Corte y barba - $7000">Corte y barba - $7000</option>
+    `;
+  }
+}
+
+// Manejo del formulario de clientes (MODIFICADO PARA FIREBASE)
+document.getElementById("formClientes").addEventListener("submit", function(e) {
+  e.preventDefault();
+  
+  // Validación de campos
+  const nombre = document.getElementById("nombreCliente").value.trim();
+  const barbero = document.getElementById("barbero").value;
+  const tipoCorte = document.getElementById("tipoCorte").value;
+  const dia = document.getElementById("dia").value;
+  const horario = document.getElementById("horario").value;
+  const pago = document.getElementById("pago").value;
+  
+  // Validar campos vacíos
+  let isValid = true;
+  
+  if (!nombre) {
+    document.getElementById("nombreError").textContent = "Por favor ingrese un nombre";
+    isValid = false;
+  } else {
+    document.getElementById("nombreError").textContent = "";
+  }
+  
+  if (!barbero) {
+    document.getElementById("barberoError").textContent = "Por favor seleccione un barbero";
+    isValid = false;
+  } else {
+    document.getElementById("barberoError").textContent = "";
+  }
+  
+  if (!tipoCorte) {
+    document.getElementById("tipoCorteError").textContent = "Por favor seleccione un tipo de corte";
+    isValid = false;
+  } else {
+    document.getElementById("tipoCorteError").textContent = "";
+  }
+  
+  if (!dia) {
+    document.getElementById("diaError").textContent = "Por favor seleccione un día";
+    isValid = false;
+  } else {
+    document.getElementById("diaError").textContent = "";
+  }
+  
+  if (!horario) {
+    document.getElementById("horarioError").textContent = "Por favor seleccione un horario";
+    isValid = false;
+  } else {
+    document.getElementById("horarioError").textContent = "";
+  }
+  
+  if (!pago) {
+    document.getElementById("pagoError").textContent = "Por favor seleccione un método de pago";
+    isValid = false;
+  } else {
+    document.getElementById("pagoError").textContent = "";
+  }
+  
+  if (!isValid) return;
+  
+  const claveTurno = `${barbero}-${dia}-${horario}`;
+  
+  if (turnosReservados[claveTurno]) {
+    alert("Este horario ya está reservado. Por favor seleccione otro.");
+    return;
+  }
+  
+  // Sanitizar entrada del nombre
+  const nombreSanitizado = nombre.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  
+  // Crear objeto de turno
+  const nuevoTurno = {
+    nombre: nombreSanitizado,
+    corte: tipoCorte,
+    barbero: barbero,
+    horario: `${dia.charAt(0).toUpperCase() + dia.slice(1)} - ${horario}`,
+    pago: pago,
+    diaOriginal: dia,
+    atendido: false,
+    cancelado: false,
+    intentosCancelacion: 0
+  };
+  
+  // Guardar en Firebase
+  database.ref('turnos/').push(nuevoTurno)
+    .then(() => {
+      mostrarConfirmacion("✅ Turno Confirmado", "#00cfff");
+      document.getElementById("formClientes").reset();
+      document.getElementById("dia").innerHTML = '<option value="">--Seleccionar barbero primero--</option>';
+      document.getElementById("horario").innerHTML = '<option value="">--Seleccionar día primero--</option>';
+      document.getElementById("tipoCorte").innerHTML = '<option value="">--Seleccionar barbero primero--</option>';
+    })
+    .catch(error => {
+      alert("Error al guardar el turno: " + error.message);
+    });
+});
+
+function mostrarConfirmacion(mensaje, color) {
+  const conf = document.getElementById("confirmacion");
+  conf.textContent = mensaje;
+  conf.style.backgroundColor = color;
+  conf.style.display = "block";
+  setTimeout(() => conf.style.display = "none", 2500);
+}
+
+// Funciones para empleados (MODIFICADO PARA FIREBASE)
+function verTurnosEmpleado() {
+  const nombreEmpleado = document.getElementById("nombreEmpleado").value.trim();
+  const clave = document.getElementById("claveEmpleado").value;
+  const diaSeleccionado = document.getElementById("diaGanancia").value;
+  
+  if (!nombreEmpleado || clave !== "1902") {
+    mostrarConfirmacion("❌ Nombre o contraseña incorrectos", "#f44336");
+    return;
+  }
+  
+  document.getElementById('btnIngresar').disabled = true;
+  
+  const contenedor = document.getElementById("resultadosEmpleado");
+  const nombreCapitalizado = nombreEmpleado.charAt(0).toUpperCase() + nombreEmpleado.slice(1);
+  contenedor.innerHTML = `<h3 style="color: white;">Clientes de ${nombreCapitalizado}</h3>`;
+  
+  let filtrados = clientes.filter(c => 
+    c.barbero.toLowerCase() === nombreEmpleado.toLowerCase() && !c.cancelado
+  );
+  
+  // Filtrar por día si se seleccionó uno
+  if (diaSeleccionado) {
+    filtrados = filtrados.filter(c => c.diaOriginal === diaSeleccionado);
+  }
+  
+  if (filtrados.length === 0) {
+    contenedor.innerHTML += "<p style='color: white;'>No hay turnos asignados aún.</p>";
+    document.getElementById("ganancia").innerHTML = "";
+    return;
+  }
+  
+  filtrados.forEach((c) => {
+    const div = document.createElement("div");
+    div.className = "cliente-item";
+    div.dataset.id = c.id;
+    div.innerHTML = `
+      <strong>${c.nombre}</strong> - ${c.corte} - ${c.horario} - ${c.pago}
+      <div class="acciones">
+        ${!c.atendido ? `<button class="check" onclick="marcarAtendido('${c.id}')">✔️ Atender</button>` : ''}
+        ${!c.atendido ? `<button class="cancel" onclick="marcarCancelado('${c.id}')">❌ Cancelar</button>` : ''}
+        ${c.atendido ? '<span class="success-message">✔️ Atendido</span>' : ''}
+      </div>
+    `;
+    contenedor.appendChild(div);
+  });
+
+  const btnGanancia = document.createElement("button");
+  btnGanancia.textContent = "Calcular Ganancia";
+  btnGanancia.onclick = () => calcularGanancia(nombreEmpleado, diaSeleccionado);
+  contenedor.appendChild(btnGanancia);
+}
+
+function marcarAtendido(turnoId) {
+  database.ref('turnos/' + turnoId).update({ atendido: true })
+    .then(() => {
+      mostrarConfirmacion("✔️ Turno marcado como atendido", "#00cfff");
+    })
+    .catch(error => {
+      alert("Error al actualizar: " + error.message);
+    });
+}
+
+function marcarCancelado(turnoId) {
+  if (confirm("¿Está seguro que desea cancelar este turno?")) {
+    database.ref('turnos/' + turnoId).update({ cancelado: true })
+      .then(() => {
+        mostrarConfirmacion("❌ Turno Cancelado", "#f44336");
+      })
+      .catch(error => {
+        alert("Error al cancelar: " + error.message);
+      });
+  }
+}
+
+function calcularGanancia(barbero, dia) {
+  const atendidosDelDia = clientes.filter(c => 
+    c.barbero.toLowerCase() === barbero.toLowerCase() && 
+    c.atendido === true &&
+    (!dia || c.diaOriginal === dia)
+  );
+  
+  if (atendidosDelDia.length === 0) {
+    document.getElementById("ganancia").innerHTML = "No hay turnos atendidos para calcular ganancias";
+    return;
+  }
+  
+  let gananciaTotal = 0;
+  
+  atendidosDelDia.forEach(c => {
+    const montoMatch = c.corte.match(/\$(\d+)/);
+    if (montoMatch) {
+      const monto = parseInt(montoMatch[1]);
+      
+      if (barbero.toLowerCase() === "rodrigo") {
+        gananciaTotal += monto;
+      } else {
+        gananciaTotal += monto * 0.4;
+      }
+    }
+  });
+  
+  const diaTexto = dia ? ` (${dia.charAt(0).toUpperCase() + dia.slice(1)})` : '';
+  document.getElementById("ganancia").innerHTML = `💰 Ganancia total${diaTexto}: $${gananciaTotal.toFixed(2)}`;
+}
+
+// Funciones para la sección de Mis Turnos (MODIFICADO PARA FIREBASE)
+function buscarMisTurnos() {
+  const nombre = document.getElementById("nombreBusqueda").value.trim();
+  const resultados = document.getElementById("resultadosTurnos");
+  
+  if (!nombre) {
+    resultados.innerHTML = "<p style='color:red;'>Por favor ingrese su nombre</p>";
+    return;
+  }
+  
+  // Buscar coincidencia exacta
+  const turnosCliente = clientes.filter(c => 
+    c.nombre.toLowerCase() === nombre.toLowerCase() && !c.cancelado
+  );
+  
+  resultados.innerHTML = "";
+  
+  if (turnosCliente.length === 0) {
+    resultados.innerHTML = "<p style='color:red;'>No se encontraron turnos. Verifique que ingresó su nombre exactamente como lo registró.</p>";
+    return;
+  }
+  
+  turnosCliente.forEach((turno) => {
+    const div = document.createElement("div");
+    div.className = "turno-cliente";
+    div.dataset.id = turno.id;
+    
+    div.innerHTML = `
+      <h3>Turno con ${turno.barbero}</h3>
+      <p><strong>Tipo de corte:</strong> ${turno.corte}</p>
+      <p><strong>Horario:</strong> ${turno.horario}</p>
+      <p><strong>Método de pago:</strong> ${turno.pago}</p>
+      <p><strong>Estado:</strong> ${turno.atendido ? "✔️ Atendido" : "⏱ Pendiente"}</p>
+      ${!turno.atendido && turno.intentosCancelacion === 0 ? 
+        `<button onclick="cancelarTurnoCliente('${turno.id}')">Cancelar Turno</button>` : 
+        turno.intentosCancelacion > 0 ? 
+        "<p style='color:#f44336;'>Turno ya cancelado</p>" : ""}
+    `;
+    
+    resultados.appendChild(div);
+  });
+}
+
+function cancelarTurnoCliente(turnoId) {
+  if (confirm("¿Está seguro que desea cancelar este turno? Esta acción no se puede deshacer.")) {
+    database.ref('turnos/' + turnoId).update({ 
+      cancelado: true,
+      intentosCancelacion: 1 
+    })
+    .then(() => {
+      const divTurno = document.querySelector(`.turno-cliente[data-id="${turnoId}"]`);
+      if (divTurno) {
+        divTurno.style.borderLeft = "5px solid #f44336";
+        divTurno.innerHTML += "<p style='color:#f44336;'><strong>❌ Turno cancelado</strong></p>";
+      }
+      mostrarConfirmacion("❌ Turno Cancelado", "#f44336");
+    })
+    .catch(error => {
+      alert("Error al cancelar: " + error.message);
+    });
+  }
+}
+</script>
+</body>
+</html>
