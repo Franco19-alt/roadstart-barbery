@@ -362,6 +362,9 @@ const horariosPorBarbero = {
   }
 };
 
+// Mapeo de días de la semana
+const diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+
 // Variables globales
 let clientes = [];
 let turnosReservados = {};
@@ -402,6 +405,16 @@ function mostrarTab(tab, btn) {
   }
 }
 
+// Función para convertir hora en formato "HH:MMhs" a minutos desde medianoche
+function horaAMinutos(horaStr) {
+  if (!horaStr) return 0;
+  // Extraer números de la hora (eliminar "hs" y manejar casos como "20hs")
+  const numeros = horaStr.replace('hs', '').split(':');
+  const horas = parseInt(numeros[0]) || 0;
+  const minutos = parseInt(numeros[1]) || 0;
+  return horas * 60 + minutos;
+}
+
 function actualizarDias() {
   const barbero = document.getElementById("barbero").value;
   const diaSelect = document.getElementById("dia");
@@ -409,9 +422,36 @@ function actualizarDias() {
   
   if (!barbero) return;
   
-  const dias = Object.keys(horariosPorBarbero[barbero]);
-  dias.forEach(dia => {
-    diaSelect.innerHTML += `<option value="${dia}">${dia.charAt(0).toUpperCase() + dia.slice(1)}</option>`;
+  // Obtener fecha actual
+  const ahora = new Date();
+  const diaActual = diasSemana[ahora.getDay()];
+  const horaActual = ahora.getHours();
+  const minutosActual = ahora.getMinutes();
+  const minutosTotalesActual = horaActual * 60 + minutosActual;
+  
+  const diasDisponibles = Object.keys(horariosPorBarbero[barbero]);
+  
+  diasDisponibles.forEach(dia => {
+    // Si el día es hoy, verificar si hay horarios disponibles después de la hora actual
+    if (dia === diaActual) {
+      const horariosHoy = horariosPorBarbero[barbero][dia];
+      const hayHorariosDisponibles = horariosHoy.some(h => {
+        const minutosHora = horaAMinutos(h);
+        return minutosHora > minutosTotalesActual && !turnosReservados[`${barbero}-${dia}-${h}`];
+      });
+      
+      if (hayHorariosDisponibles) {
+        diaSelect.innerHTML += `<option value="${dia}">${dia.charAt(0).toUpperCase() + dia.slice(1)} (Hoy)</option>`;
+      }
+    } else {
+      // Para otros días, simplemente verificar si hay algún horario disponible
+      const horariosDia = horariosPorBarbero[barbero][dia];
+      const hayHorariosDisponibles = horariosDia.some(h => !turnosReservados[`${barbero}-${dia}-${h}`]);
+      
+      if (hayHorariosDisponibles) {
+        diaSelect.innerHTML += `<option value="${dia}">${dia.charAt(0).toUpperCase() + dia.slice(1)}</option>`;
+      }
+    }
   });
   
   document.getElementById("horario").innerHTML = '<option value="">--Seleccionar día primero--</option>';
@@ -427,9 +467,24 @@ function actualizarHorarios() {
   
   if (!barbero || !dia) return;
   
+  // Obtener fecha actual si el día seleccionado es hoy
+  const ahora = new Date();
+  const diaActual = diasSemana[ahora.getDay()];
+  const horaActual = ahora.getHours();
+  const minutosActual = ahora.getMinutes();
+  const minutosTotalesActual = horaActual * 60 + minutosActual;
+  
   if (horariosPorBarbero[barbero] && horariosPorBarbero[barbero][dia]) {
     const horariosDisponibles = horariosPorBarbero[barbero][dia].filter(h => {
       const clave = `${barbero}-${dia}-${h}`;
+      
+      // Si es hoy, filtrar horarios que sean después de la hora actual
+      if (dia === diaActual) {
+        const minutosHora = horaAMinutos(h);
+        return !turnosReservados[clave] && minutosHora > minutosTotalesActual;
+      }
+      
+      // Para otros días, mostrar todos los horarios disponibles
       return !turnosReservados[clave];
     });
     
