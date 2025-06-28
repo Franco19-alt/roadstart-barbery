@@ -393,7 +393,36 @@ function cargarDatos() {
 // Inicializar carga de datos
 cargarDatos();
 
-// Funciones principales (se mantienen igual hasta el formulario)
+// Función para convertir hora en formato "HH:MMhs" a minutos desde medianoche
+function horaAMinutos(horaStr) {
+  if (!horaStr) return 0;
+  // Extraer números de la hora (eliminar "hs" y manejar casos como "20hs")
+  const numeros = horaStr.replace('hs', '').split(':');
+  const horas = parseInt(numeros[0]) || 0;
+  const minutos = parseInt(numeros[1]) || 0;
+  return horas * 60 + minutos;
+}
+
+// Función para obtener los días disponibles a partir de hoy
+function obtenerDiasDisponibles(barbero) {
+  const ahora = new Date();
+  const diaActualNum = ahora.getDay(); // 0=domingo, 1=lunes,...,6=sábado
+  const diasDisponibles = [];
+  
+  // Solo consideramos de lunes (1) a sábado (6)
+  for (let i = 1; i <= 6; i++) {
+    if (i >= diaActualNum) {
+      const dia = diasSemana[i];
+      // Verificamos si el barbero trabaja ese día
+      if (horariosPorBarbero[barbero] && horariosPorBarbero[barbero][dia]) {
+        diasDisponibles.push(dia);
+      }
+    }
+  }
+  
+  return diasDisponibles;
+}
+
 function mostrarTab(tab, btn) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
   document.getElementById("tab-" + tab).classList.add("active");
@@ -403,16 +432,6 @@ function mostrarTab(tab, btn) {
   if (tab === 'empleados') {
     document.getElementById('btnIngresar').disabled = false;
   }
-}
-
-// Función para convertir hora en formato "HH:MMhs" a minutos desde medianoche
-function horaAMinutos(horaStr) {
-  if (!horaStr) return 0;
-  // Extraer números de la hora (eliminar "hs" y manejar casos como "20hs")
-  const numeros = horaStr.replace('hs', '').split(':');
-  const horas = parseInt(numeros[0]) || 0;
-  const minutos = parseInt(numeros[1]) || 0;
-  return horas * 60 + minutos;
 }
 
 function actualizarDias() {
@@ -425,32 +444,29 @@ function actualizarDias() {
   // Obtener fecha actual
   const ahora = new Date();
   const diaActual = diasSemana[ahora.getDay()];
-  const horaActual = ahora.getHours();
-  const minutosActual = ahora.getMinutes();
-  const minutosTotalesActual = horaActual * 60 + minutosActual;
+  const minutosTotalesActual = ahora.getHours() * 60 + ahora.getMinutes();
   
-  const diasDisponibles = Object.keys(horariosPorBarbero[barbero]);
+  // Obtener días disponibles (desde hoy hasta sábado) que el barbero trabaje
+  const diasDisponibles = obtenerDiasDisponibles(barbero);
   
   diasDisponibles.forEach(dia => {
-    // Si el día es hoy, verificar si hay horarios disponibles después de la hora actual
-    if (dia === diaActual) {
-      const horariosHoy = horariosPorBarbero[barbero][dia];
-      const hayHorariosDisponibles = horariosHoy.some(h => {
+    // Verificar si hay horarios disponibles para este día
+    const horariosDia = horariosPorBarbero[barbero][dia] || [];
+    const hayHorariosDisponibles = horariosDia.some(h => {
+      const clave = `${barbero}-${dia}-${h}`;
+      // Si es hoy, verificar que el horario sea después de la hora actual
+      if (dia === diaActual) {
         const minutosHora = horaAMinutos(h);
-        return minutosHora > minutosTotalesActual && !turnosReservados[`${barbero}-${dia}-${h}`];
-      });
-      
-      if (hayHorariosDisponibles) {
-        diaSelect.innerHTML += `<option value="${dia}">${dia.charAt(0).toUpperCase() + dia.slice(1)} (Hoy)</option>`;
+        return minutosHora > minutosTotalesActual && !turnosReservados[clave];
       }
-    } else {
-      // Para otros días, simplemente verificar si hay algún horario disponible
-      const horariosDia = horariosPorBarbero[barbero][dia];
-      const hayHorariosDisponibles = horariosDia.some(h => !turnosReservados[`${barbero}-${dia}-${h}`]);
-      
-      if (hayHorariosDisponibles) {
-        diaSelect.innerHTML += `<option value="${dia}">${dia.charAt(0).toUpperCase() + dia.slice(1)}</option>`;
-      }
+      // Para otros días, solo verificar que no esté reservado
+      return !turnosReservados[clave];
+    });
+    
+    if (hayHorariosDisponibles) {
+      const label = dia === diaActual ? `${dia.charAt(0).toUpperCase() + dia.slice(1)} (Hoy)` : 
+                                      dia.charAt(0).toUpperCase() + dia.slice(1);
+      diaSelect.innerHTML += `<option value="${dia}">${label}</option>`;
     }
   });
   
@@ -470,9 +486,7 @@ function actualizarHorarios() {
   // Obtener fecha actual si el día seleccionado es hoy
   const ahora = new Date();
   const diaActual = diasSemana[ahora.getDay()];
-  const horaActual = ahora.getHours();
-  const minutosActual = ahora.getMinutes();
-  const minutosTotalesActual = horaActual * 60 + minutosActual;
+  const minutosTotalesActual = ahora.getHours() * 60 + ahora.getMinutes();
   
   if (horariosPorBarbero[barbero] && horariosPorBarbero[barbero][dia]) {
     const horariosDisponibles = horariosPorBarbero[barbero][dia].filter(h => {
