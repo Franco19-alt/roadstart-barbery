@@ -369,6 +369,16 @@ const diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'vierne
 let clientes = [];
 let turnosReservados = {};
 
+// Función para obtener el inicio de la semana (lunes)
+function getInicioSemana() {
+  const hoy = new Date();
+  const dia = hoy.getDay(); // 0=domingo, 1=lunes,...,6=sábado
+  const diff = hoy.getDate() - dia + (dia === 0 ? -6 : 1); // Ajuste para que el lunes sea el primer día
+  const inicioSemana = new Date(hoy.setDate(diff));
+  inicioSemana.setHours(0, 0, 0, 0);
+  return inicioSemana;
+}
+
 // Cargar datos desde Firebase
 function cargarDatos() {
   database.ref('turnos/').on('value', (snapshot) => {
@@ -612,7 +622,7 @@ document.getElementById("formClientes").addEventListener("submit", function(e) {
   // Sanitizar entrada del nombre
   const nombreSanitizado = nombre.replace(/</g, "&lt;").replace(/>/g, "&gt;");
   
-  // Crear objeto de turno
+  // Crear objeto de turno CON FECHA DE CREACIÓN
   const nuevoTurno = {
     nombre: nombreSanitizado,
     corte: tipoCorte,
@@ -622,7 +632,8 @@ document.getElementById("formClientes").addEventListener("submit", function(e) {
     diaOriginal: dia,
     atendido: false,
     cancelado: false,
-    intentosCancelacion: 0
+    intentosCancelacion: 0,
+    fechaCreacion: new Date().toISOString() // NUEVO CAMPO IMPORTANTE
   };
   
   // Guardar en Firebase
@@ -662,8 +673,13 @@ function verTurnosEmpleado() {
   const nombreCapitalizado = nombreEmpleado.charAt(0).toUpperCase() + nombreEmpleado.slice(1);
   contenedor.innerHTML = `<h3 style="color: white;">Clientes de ${nombreCapitalizado}${diaSeleccionado ? ' (' + diaSeleccionado.charAt(0).toUpperCase() + diaSeleccionado.slice(1) + ')' : ''}</h3>`;
   
+  // Obtener la fecha de inicio de semana (lunes)
+  const inicioSemana = getInicioSemana();
+  
   let filtrados = clientes.filter(c => 
-    c.barbero.toLowerCase() === nombreEmpleado.toLowerCase() && !c.cancelado
+    c.barbero.toLowerCase() === nombreEmpleado.toLowerCase() && 
+    !c.cancelado &&
+    new Date(c.fechaCreacion) >= inicioSemana // Solo turnos de esta semana
   );
   
   // Filtrar por día si se seleccionó uno
@@ -731,9 +747,13 @@ function marcarCancelado(turnoId) {
 }
 
 function calcularGanancia(barbero, dia) {
+  // Obtener inicio de semana para filtrar solo turnos de esta semana
+  const inicioSemana = getInicioSemana();
+  
   const atendidosDelDia = clientes.filter(c => 
     c.barbero.toLowerCase() === barbero.toLowerCase() && 
     c.atendido === true &&
+    new Date(c.fechaCreacion) >= inicioSemana && // Solo turnos de esta semana
     (!dia || c.diaOriginal === dia)
   );
   
