@@ -382,9 +382,11 @@ function cargarDatos() {
         turno.id = key; // Guardamos el ID de Firebase
         clientes.push(turno);
         
-        // Marcamos horarios como reservados
-        const claveTurno = `${turno.barbero}-${turno.diaOriginal}-${turno.horario.split(" - ")[1]}`;
-        turnosReservados[claveTurno] = true;
+        // Solo marcar como reservado si NO está cancelado
+        if (!turno.cancelado) {
+          const claveTurno = `${turno.barbero}-${turno.diaOriginal}-${turno.horario.split(" - ")[1]}`;
+          turnosReservados[claveTurno] = true;
+        }
       });
     }
   });
@@ -534,7 +536,7 @@ function actualizarTipoCorte() {
   }
 }
 
-// Manejo del formulario de clientes (MODIFICADO PARA FIREBASE)
+// Manejo del formulario de clientes
 document.getElementById("formClientes").addEventListener("submit", function(e) {
   e.preventDefault();
   
@@ -638,7 +640,7 @@ function mostrarConfirmacion(mensaje, color) {
   setTimeout(() => conf.style.display = "none", 2500);
 }
 
-// Funciones para empleados (MODIFICADO PARA FIREBASE)
+// Funciones para empleados
 function verTurnosEmpleado() {
   const nombreEmpleado = document.getElementById("nombreEmpleado").value.trim();
   const clave = document.getElementById("claveEmpleado").value;
@@ -703,13 +705,23 @@ function marcarAtendido(turnoId) {
 
 function marcarCancelado(turnoId) {
   if (confirm("¿Está seguro que desea cancelar este turno?")) {
-    database.ref('turnos/' + turnoId).update({ cancelado: true })
-      .then(() => {
-        mostrarConfirmacion("❌ Turno Cancelado", "#f44336");
-      })
-      .catch(error => {
-        alert("Error al cancelar: " + error.message);
-      });
+    // Primero obtener los datos del turno para liberar el horario
+    database.ref('turnos/' + turnoId).once('value').then((snapshot) => {
+      const turno = snapshot.val();
+      const claveTurno = `${turno.barbero}-${turno.diaOriginal}-${turno.horario.split(" - ")[1]}`;
+      
+      // Eliminar de turnosReservados
+      delete turnosReservados[claveTurno];
+      
+      // Marcar como cancelado en Firebase
+      return database.ref('turnos/' + turnoId).update({ cancelado: true });
+    }).then(() => {
+      mostrarConfirmacion("❌ Turno Cancelado", "#f44336");
+      // Actualizar la vista
+      verTurnosEmpleado();
+    }).catch(error => {
+      alert("Error al cancelar: " + error.message);
+    });
   }
 }
 
@@ -744,7 +756,7 @@ function calcularGanancia(barbero, dia) {
   document.getElementById("ganancia").innerHTML = `💰 Ganancia total${diaTexto}: $${gananciaTotal.toFixed(2)}`;
 }
 
-// Funciones para la sección de Mis Turnos (MODIFICADO PARA FIREBASE)
+// Funciones para la sección de Mis Turnos
 function buscarMisTurnos() {
   const nombre = document.getElementById("nombreBusqueda").value.trim();
   const resultados = document.getElementById("resultadosTurnos");
@@ -789,19 +801,27 @@ function buscarMisTurnos() {
 
 function cancelarTurnoCliente(turnoId) {
   if (confirm("¿Está seguro que desea cancelar este turno? Esta acción no se puede deshacer.")) {
-    database.ref('turnos/' + turnoId).update({ 
-      cancelado: true,
-      intentosCancelacion: 1 
-    })
-    .then(() => {
+    // Primero obtener los datos del turno para liberar el horario
+    database.ref('turnos/' + turnoId).once('value').then((snapshot) => {
+      const turno = snapshot.val();
+      const claveTurno = `${turno.barbero}-${turno.diaOriginal}-${turno.horario.split(" - ")[1]}`;
+      
+      // Eliminar de turnosReservados
+      delete turnosReservados[claveTurno];
+      
+      // Marcar como cancelado en Firebase
+      return database.ref('turnos/' + turnoId).update({ 
+        cancelado: true,
+        intentosCancelacion: 1 
+      });
+    }).then(() => {
       const divTurno = document.querySelector(`.turno-cliente[data-id="${turnoId}"]`);
       if (divTurno) {
         divTurno.style.borderLeft = "5px solid #f44336";
         divTurno.innerHTML += "<p style='color:#f44336;'><strong>❌ Turno cancelado</strong></p>";
       }
       mostrarConfirmacion("❌ Turno Cancelado", "#f44336");
-    })
-    .catch(error => {
+    }).catch(error => {
       alert("Error al cancelar: " + error.message);
     });
   }
