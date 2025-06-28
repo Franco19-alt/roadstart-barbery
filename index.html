@@ -282,7 +282,7 @@
     <h2>Acceso Empleados</h2>
     <input type="text" id="nombreEmpleado" placeholder="Nombre del barbero" />
     <input type="password" id="claveEmpleado" placeholder="Contraseña" />
-    <select id="diaGanancia">
+    <select id="diaGanancia" onchange="habilitarBotonIngresar()">
       <option value="">Seleccionar día</option>
       <option value="lunes">Lunes</option>
       <option value="martes">Martes</option>
@@ -430,9 +430,16 @@ function mostrarTab(tab, btn) {
   document.getElementById("tab-" + tab).classList.add("active");
   document.querySelectorAll('.tab-button').forEach(b => b.classList.remove("active"));
   btn.classList.add("active");
+}
+
+function habilitarBotonIngresar() {
+  const diaSeleccionado = document.getElementById("diaGanancia").value;
+  const btnIngresar = document.getElementById("btnIngresar");
   
-  if (tab === 'empleados') {
-    document.getElementById('btnIngresar').disabled = false;
+  if (diaSeleccionado) {
+    btnIngresar.disabled = false;
+  } else {
+    btnIngresar.disabled = true;
   }
 }
 
@@ -651,11 +658,9 @@ function verTurnosEmpleado() {
     return;
   }
   
-  document.getElementById('btnIngresar').disabled = true;
-  
   const contenedor = document.getElementById("resultadosEmpleado");
   const nombreCapitalizado = nombreEmpleado.charAt(0).toUpperCase() + nombreEmpleado.slice(1);
-  contenedor.innerHTML = `<h3 style="color: white;">Clientes de ${nombreCapitalizado}</h3>`;
+  contenedor.innerHTML = `<h3 style="color: white;">Clientes de ${nombreCapitalizado}${diaSeleccionado ? ' (' + diaSeleccionado.charAt(0).toUpperCase() + diaSeleccionado.slice(1) + ')' : ''}</h3>`;
   
   let filtrados = clientes.filter(c => 
     c.barbero.toLowerCase() === nombreEmpleado.toLowerCase() && !c.cancelado
